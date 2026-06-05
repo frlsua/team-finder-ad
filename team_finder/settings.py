@@ -3,14 +3,14 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# TODO: Создать и заполнить .env, ориентируясь на .env_example
 
 SECRET_KEY = config("DJANGO_SECRET_KEY")
-
 DEBUG = config("DJANGO_DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = []
 
+AUTH_USER_MODEL = 'users.User'
+LOGIN_URL = '/users/login/'
 
 # Application definition
 
@@ -21,6 +21,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'projects',
+    'users',
 ]
 
 MIDDLEWARE = [

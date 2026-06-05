@@ -120,7 +120,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
+.DS_store
 
 # mkdocs documentation
 /site
