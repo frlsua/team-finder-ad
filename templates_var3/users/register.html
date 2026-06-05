@@ -16,6 +16,7 @@
             <div>{{ form.name.label_tag }} {{ form.name }}</div>
             <div>{{ form.surname.label_tag }} {{ form.surname }}</div>
         </div>
+        {{ form.phone.label_tag }} {{ form.phone }}
         {{ form.email.label_tag }} {{ form.email }}
         {{ form.password.label_tag }} {{ form.password }}
         {% for error in form.errors.values %}
