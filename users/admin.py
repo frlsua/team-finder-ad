@@ -1,25 +1,29 @@
 from django.db.models import Count
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.forms import UserChangeForm, UserCreationForm
+from django.contrib.auth.forms import (
+    UserChangeForm as BaseUserChangeForm,
+    UserCreationForm as BaseUserCreationForm
+)
+
 from .models import User
 
 
-class CustomUserChangeForm(UserChangeForm):
+class UserChangeForm(BaseUserChangeForm):
     class Meta:
         model = User
         fields = '__all__'
 
 
-class CustomUserCreationForm(UserCreationForm):
+class UserCreationForm(BaseUserCreationForm):
     class Meta:
         model = User
         fields = ('email', 'name', 'surname')
 
 
 class UserAdmin(BaseUserAdmin):
-    form = CustomUserChangeForm
-    add_form = CustomUserCreationForm
+    form = UserChangeForm
+    add_form = UserCreationForm
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name', 'surname']

@@ -14,10 +14,10 @@ from .constants import (
 from .tools import generate_avatar
 
 
-class MyUserManager(BaseUserManager):
+class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
-            raise ValueError("The email field must be set")
+            raise ValueError("Поле с почтой должно быть заполнено")
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -31,12 +31,22 @@ class MyUserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(unique=True)
-    name = models.CharField(max_length=USER_NAME_MAX_LENGTH)
-    surname = models.CharField(max_length=USER_SURNAME_MAX_LENGTH)
+    email = models.EmailField(
+        unique=True,
+        verbose_name='Почта'
+    )
+    name = models.CharField(
+        max_length=USER_NAME_MAX_LENGTH,
+        verbose_name='Имя'
+    )
+    surname = models.CharField(
+        max_length=USER_SURNAME_MAX_LENGTH,
+        verbose_name='Фамилия'
+    )
     avatar = models.ImageField(
         upload_to=AVATAR_PATH,
-        blank=True
+        blank=True,
+        verbose_name='Фотография'
     )
     phone = models.CharField(
         max_length=USER_PHONE_MAX_LENGTH,
@@ -46,25 +56,34 @@ class User(AbstractBaseUser, PermissionsMixin):
         )],
         unique=True,
         blank=True,
-        null=True
+        null=True,
+        verbose_name='Номер телефона'
     )
     github_url = models.URLField(
         validators=[RegexValidator(
-            regex=r'^https://github.com/[\w\-]+/?$',
-            message='Ссылка на профиль GitHub'
-        )], blank=True, null=True
+            regex=r'^https://github.com/[\w\-]+/?$'
+        )], blank=True, null=True,
+        verbose_name='Ссылка на профиль GitHub'
     )
     about = models.TextField(
-        max_length=USER_ABOUT_MAX_LENGTH, blank=True, null=True
+        max_length=USER_ABOUT_MAX_LENGTH, blank=True, null=True,
+        verbose_name='О себе'
     )
 
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(
+        default=True, verbose_name='В сети'
+    )
+    is_staff = models.BooleanField(
+        default=False, verbose_name='Модератор'
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['name', 'surname', 'phone']
 
-    objects = MyUserManager()
+    objects = UserManager()
+
+    class Meta:
+        ordering = ['email', 'surname', 'name']
 
     def __str__(self):
         return self.name
@@ -72,8 +91,5 @@ class User(AbstractBaseUser, PermissionsMixin):
     def save(self, *args, **kwargs):
         if not self.pk and not self.avatar:
             first_letter = self.name[0]
-            self.avatar = self.generate_user_avatar(first_letter)
+            self.avatar = generate_avatar(first_letter)
         super().save(*args, **kwargs)
-
-    def generate_user_avatar(self, first_letter):
-        return generate_avatar(first_letter)

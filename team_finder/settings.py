@@ -1,16 +1,19 @@
 from pathlib import Path
 from decouple import config
 
+from django.urls import reverse_lazy
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-SECRET_KEY = config("DJANGO_SECRET_KEY")
+SECRET_KEY = config("DJANGO_SECRET_KEY", default='django_secret_key')
 DEBUG = config("DJANGO_DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", 'localhost, 127.0.0.1').split(', ')
 
 AUTH_USER_MODEL = 'users.User'
-LOGIN_URL = '/users/login/'
+LOGIN_URL = reverse_lazy('users:login')
 
 # Application definition
 
@@ -95,9 +98,9 @@ if not DEBUG:
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = 'ru-ru'
 
-TIME_ZONE = "UTC"
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 

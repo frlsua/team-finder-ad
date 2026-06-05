@@ -1,4 +1,5 @@
 import json
+from http import HTTPStatus
 
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -6,8 +7,6 @@ from django.views.generic import DetailView, ListView
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import get_object_or_404, redirect, render
-
-from http import HTTPStatus
 
 from .models import Project, Skill
 from .forms import ProjectForm
@@ -33,10 +32,11 @@ class ProjectListView(ListView):
         return queryset
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['all_skills'] = Skill.objects.all().order_by('name')
-        context['active_skill'] = self.request.GET.get('skill', '')
-        return context
+        return super().get_context_data(
+            **kwargs,
+            all_skills=Skill.objects.all(),
+            active_skill=self.request.GET.get('skill', '')
+        )
 
 
 class ProjectDetailView(DetailView):
@@ -46,17 +46,14 @@ class ProjectDetailView(DetailView):
     pk_url_kwarg = 'project_id'
 
 
+@login_required
 def get_project_and_check_owner(request, project_id):
-    if not request.user.is_authenticated:
-        return JsonResponse(
-            {'error': 'Unauthorized'},
-            status=HTTPStatus.UNAUTHORIZED
-        )
-
     project = get_object_or_404(Project, pk=project_id)
 
     if project.owner != request.user:
-        return JsonResponse({'error': 'Forbidden'}, status=HTTPStatus.FORBIDDEN)
+        return JsonResponse(
+            {'error': 'Доступ запрещён'}, status=HTTPStatus.FORBIDDEN
+        )
 
     return project
 
@@ -64,28 +61,22 @@ def get_project_and_check_owner(request, project_id):
 @login_required
 def create_project(request):
     form = ProjectForm(request.POST or None)
-    if form.is_valid():
-        project = form.save(commit=False)
-        project.owner = request.user
-        project.save()
-        project.participants.add(request.user)
-        return redirect('project_detail', project_id=project.id)
+    if not form.is_valid():
+        return render(
+            request, 'projects/create-project.html',
+            {'form': form, 'is_edit': False}
+        )
 
-    return render(
-        request,
-        'projects/create-project.html',
-        {'form': form, 'is_edit': False}
-    )
+    project = form.save(commit=False)
+    project.owner = request.user
+    project.save()
+    project.participants.add(request.user)
+    return redirect('project_detail', project_id=project.id)
 
 
 @login_required
 def edit_project(request, project_id):
-    project = get_object_or_404(Project, pk=project_id)
-    if project.owner != request.user:
-        return JsonResponse(
-            {'error': 'Access denied'},
-            status=HTTPStatus.FORBIDDEN
-        )
+    project = get_project_and_check_owner(request, project_id)
 
     form = ProjectForm(request.POST or None, instance=project)
     if form.is_valid():
@@ -102,19 +93,20 @@ def edit_project(request, project_id):
 @login_required
 @require_POST
 def complete_project(request, project_id):
-    project = get_object_or_404(Project, pk=project_id)
-    if project.owner != request.user or project.status != PROJECT_STATUS_OPEN:
+    project = get_project_and_check_owner(request, project_id)
+
+    if project.status != PROJECT_STATUS_OPEN:
         return JsonResponse(
-            {'error': 'Access denied'},
-            status=HTTPStatus.FORBIDDEN
+            {'error': 'Проект уже завершён'},
+            status=HTTPStatus.BAD_REQUEST
         )
-    
+
     project.status = PROJECT_STATUS_CLOSED
     project.save(update_fields=['status'])
 
     return JsonResponse({
         'is_complete': True,
-        'project_status': PROJECT_STATUS_CLOSED
+        'project_status': project.status
     })
 
 
@@ -123,7 +115,7 @@ def skill_autocomplete(request):
     q = request.GET.get('q', '')
     skills = Skill.objects.filter(
         name__istartswith=q
-    ).order_by('name')[:SKILL_AUTOCOMPLETE_LIMIT]
+    )[:SKILL_AUTOCOMPLETE_LIMIT]
     data = [
         {'id': skill.id, 'name': skill.name} for skill in skills
     ]
@@ -141,7 +133,7 @@ def add_skill_to_project(request, project_id):
         data = json.loads(request.body)
     except json.JSONDecodeError:
         return JsonResponse(
-            {'error': 'Invalid JSON'},
+            {'error': 'Неверно переданы данные о навыке'},
             status=HTTPStatus.BAD_REQUEST
         )
 
@@ -155,14 +147,14 @@ def add_skill_to_project(request, project_id):
             skill = Skill.objects.get(id=skill_id)
         except Skill.DoesNotExist:
             return JsonResponse(
-                {'error': 'Skill not found'},
+                {'error': f'Навык {name} не существует'},
                 status=HTTPStatus.NOT_FOUND
             )
     elif name:
         skill, created = Skill.objects.get_or_create(name=name)
     else:
         return JsonResponse(
-            {'error': 'Missing skill\'s ID or name'},
+            {'error': 'Недостаёт id или наименования навыка'},
             status=HTTPStatus.BAD_REQUEST
         )
     
@@ -190,7 +182,7 @@ def remove_skill_from_project(request, project_id, skill_id):
         return JsonResponse({
             'error': 'Project doesn\'t have such a skill'
         }, status=HTTPStatus.NOT_FOUND)
-    
+
     project.skills.remove(skill)
     return JsonResponse({'removed': True})
 
@@ -199,9 +191,11 @@ def remove_skill_from_project(request, project_id, skill_id):
 @require_POST
 def toggle_participate(request, project_id):
     project = get_object_or_404(Project, pk=project_id)
-    participant = not project.participants.filter(pk=request.user.pk).exists()
-    if participant:
-        project.participants.add(request.user)
-    else:
+    is_participant = project.participants.filter(pk=request.user.pk).exists()
+    if is_participant:
         project.participants.remove(request.user)
-    return JsonResponse({"status": "ok", "participant": participant})
+        is_participant = False
+    else:
+        project.participants.add(request.user)
+        is_participant = True
+    return JsonResponse({"participant": is_participant})

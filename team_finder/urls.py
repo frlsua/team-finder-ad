@@ -7,7 +7,9 @@ from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', RedirectView.as_view(url='/projects/list/', permanent=False)),
+    path('', RedirectView.as_view(
+        pattern_name='project_list', permanent=False)
+    ),
     path('projects/', include('projects.urls')),
     path('users/', include('users.urls', namespace='users'))
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

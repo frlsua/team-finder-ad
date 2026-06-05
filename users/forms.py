@@ -1,33 +1,17 @@
 import re
+
 from django import forms
 from django.contrib.auth import authenticate
-from django.contrib.auth.forms import PasswordChangeForm
-from django.core.validators import URLValidator
-from django.core.exceptions import ValidationError
+from django.core.validators import ValidationError
 
 from .models import User
+from team_finder.validators import validate_url
 
 
 class UserRegistrationForm(forms.ModelForm):
-    password = forms.CharField(
-        widget=forms.PasswordInput, label='Пароль'
-    )
-    phone = forms.CharField(required=True, label='Номер телефона')
-
     class Meta:
         model = User
         fields = ['name', 'surname', 'email', 'phone', 'password']
-
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'surname': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-        }
-        labels = {
-            'name': 'Имя',
-            'surname': 'Фамилия',
-            'email': 'Почта'
-        }
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -58,38 +42,9 @@ class UserLoginForm(forms.Form):
 
 
 class ProfileEditForm(forms.ModelForm):
-    avatar = forms.ImageField(
-        label="Фотография",
-        required=False,
-        widget=forms.FileInput(
-            attrs={
-                "accept": "image/png,image/jpeg,image/webp",
-                "class": "visually-hidden",
-            }
-        ),
-    )
-    phone = forms.CharField(required=False, label='Номер телефона')
-
     class Meta:
         model = User
         fields = ["name", "surname", "avatar", "about", "phone", "github_url"]
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'surname': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'about': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 3
-            }),
-            'github_url': forms.URLInput(attrs={'class': 'form-control'}),
-        }
-
-        labels = {
-            'name': 'Имя',
-            'surname': 'Фамилия',
-            'phone': 'Номер телефона',
-            'about': 'О себе',
-            'github_url': 'Ссылка на GitHub',
-        }
 
     def clean_avatar(self):
         avatar = self.cleaned_data.get('avatar')
@@ -128,16 +83,5 @@ class ProfileEditForm(forms.ModelForm):
     def clean_github_url(self):
         url = self.cleaned_data.get('github_url')
         if url:
-            validator = URLValidator()
-            try:
-                validator(url)
-            except ValidationError:
-                raise ValidationError('Введите корректную ссылку')
-
-            if 'github.com' not in url.lower():
-                raise ValidationError('Ссылка должна вести на GitHub')
+            validate_url(url)
         return url
-
-
-class UserChangePasswordForm(PasswordChangeForm):
-    pass
