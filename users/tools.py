@@ -1,8 +1,8 @@
 import random
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
 from uuid import uuid4
 
+from PIL import Image, ImageDraw, ImageFont
 from django.core.files.base import ContentFile
 
 from .constants import (

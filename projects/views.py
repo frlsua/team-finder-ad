@@ -194,8 +194,8 @@ def toggle_participate(request, project_id):
     is_participant = project.participants.filter(pk=request.user.pk).exists()
     if is_participant:
         project.participants.remove(request.user)
-        is_participant = False
     else:
         project.participants.add(request.user)
-        is_participant = True
+    is_participant = not is_participant
+
     return JsonResponse({"participant": is_participant})

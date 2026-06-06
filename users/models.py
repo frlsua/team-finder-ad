@@ -83,11 +83,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     class Meta:
-        ordering = ['email', 'surname', 'name']
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+        ordering = ['email',]
 
     def __str__(self):
         return self.name
-    
+
     def save(self, *args, **kwargs):
         if not self.pk and not self.avatar:
             first_letter = self.name[0]

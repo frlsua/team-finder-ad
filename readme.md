@@ -136,4 +136,4 @@ python manage.py runserver
 ---
 
 Проект создан Семеновой Валерией в рамках обучения на курсах от "Бэкенд-разработчик на Django" от Яндекс Практикум
-Контакты: stw.vsemenova@yandex.ru
+Контакты: [Почта](mailto:stw.vsemenova@yandex.ru)

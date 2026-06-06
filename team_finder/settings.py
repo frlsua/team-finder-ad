@@ -1,8 +1,6 @@
 from pathlib import Path
 from decouple import config
 
-from django.urls import reverse_lazy
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -13,7 +11,7 @@ DEBUG = config("DJANGO_DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", 'localhost, 127.0.0.1').split(', ')
 
 AUTH_USER_MODEL = 'users.User'
-LOGIN_URL = reverse_lazy('users:login')
+LOGIN_URL = 'users:login'
 
 # Application definition
 
